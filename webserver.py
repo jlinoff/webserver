@@ -489,12 +489,14 @@ Default=%(default)s.
 
     parser.add_argument('-d', '--daemonize',
                         action='store_true',
-                        help='''Daemonize this process.
+                        help='''Daemonize the server.
+
 You must specify a PID file (--pid=file) and a log file (--log-file).
+
 Note that for a system service you would not use this option. Instead
 you would use something like systemd or supervisord to daemonize the
 process for you.
-Default=%(default)s.
+Default=%(default)s (console mode).
  ''')
 
     parser.add_argument('-e', '--entry',
@@ -518,6 +520,7 @@ Default=%(default)s.
     parser.add_argument('-g', '--generate',
                         action='store_true',
                         help='''Generate an example plug-in module to stdout and exit.
+You can use it to bootstrap a custom plug-in.
 Default=%(default)s.
  ''')
 
@@ -552,6 +555,7 @@ Default=%(default)s (no log file).
                         action='store',
                         type=str,
                         default='%(asctime)s %(filename)s %(levelname)-7s %(lineno)5d %(message)s',
+                        metavar=('FORMAT'),
                         help='''The log format.
 The logger uses the python logging package which defines the formatting options.
 Default='%(default)s'.
