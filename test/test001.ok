@@ -101,6 +101,16 @@
               <td align="left"><a href="/webserver.html">/webserver.html</a></td>
               <td align="left">Play with GET/POST operations.</td>
             </tr>
+            <tr>
+              <td align="right">11</td>
+              <td align="left"><a href="/redirect/to/https/google.com">/redirect/to/https/google.com</a></td>
+              <td align="left">Demonstrate redirection to an external site.</td>
+            </tr>
+            <tr>
+              <td align="right">12</td>
+              <td align="left"><a href="/redirect/to/webserver.html">/redirect/to/webserver.html</a></td>
+              <td align="left">Demonstrate redirection to an internal page.</td>
+            </tr>
           </tbody>
         </table>
         <p>
@@ -109,7 +119,7 @@
           and then customizing it.
         </p>
         <p>
-          You then access the new request handler by specifing the plugin option:
+          You then access the new request handler by specifying the plugin option:
           '<code>webserver.py --plugin my_request_handler</code>'.
         </p>
       </div>

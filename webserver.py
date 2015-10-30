@@ -675,10 +675,21 @@ def default_request_handler(req):
     If index.html does not exist, it displays the directory contents
     with links.
 
-    There is a special URL called '/webserver/info' that displays
+    There is a special URL '/webserver/info' that displays
     webserver information. Here is an example:
 
         http://localhost:8080/webserver/info
+
+    There is another special URL '/system/name' that executes
+    'uname -a' and returns the results.
+
+    There is yet another special URL '/redirect/to/...' that redirects
+    to another URL. It demonstrates that special URLs can have
+    arguments. Here are two examples. The first one redirects to an
+    external website. The second redirects to an internal page.
+
+        http://localhost:8080/redirect/to/https/google.com --> https://google.com
+        http://localhost:8080/redirect/to/webserver.html --> /webserver.html
 
     If a directory URL has a '@' suffix, the directory contents are
     displayed even if an index.html file is present. Here is an
@@ -692,9 +703,12 @@ def default_request_handler(req):
         http://localhost:8080/index.html@
 
     If a file URL has a '!' suffix, it is executed and the results are
-    returned. Here is an example:
+    returned. You can control how the contents are displayed by
+    specifying a content-type argument. Here some examples:
 
         http://localhost:8080/scripts/script.sh!
+        http://localhost:8080/scripts/script.sh!?content-type=text/plain
+        http://localhost:8080/scripts/script.sh!?content-type=text/html
 
     If a file has a '.tmpl' extension it is a template that uses the
     python string.Formatter syntax to fill in variables by name from
