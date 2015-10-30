@@ -157,6 +157,16 @@ Loop Data
 The python code will be left justified automatically but other than
 that it must have proper indenting.
 
+The following variables are available to embedded python code.
+
+Variable              | Description
+--------------------- | -----------
+`params['sysdir']`    | The system directory path (ex. `opt/webdir/www/templates`). <br>Used to construct file names for reading nested files.
+`params['sysfile']`   | The system file path (ex. `/opt/webdir/www/templates/example.html`).
+`params['urldir']`    | The URL directory path (ex. `/templates`).
+`params['urlfile']`   | The URL file path (ex. `/templates/example.html`).
+`params['urlprefix']` | the protocol, domain and port in URL format (ex. `http://localhost:8080`)
+
 ## Example 1. Getting Help
 
 There is a lot of help available from the program itself.
@@ -275,7 +285,7 @@ $ ./webserver.py \
 
 ## Example 9. Show how templates work.
 
-This example shows how templates work by filling three variables.
+This example shows how templates work by filling three variables on the command line.
 
 ```bash
 $ ./webserver.py --webdir www -L debug
@@ -283,6 +293,25 @@ $ ./webserver.py --webdir www -L debug
 $ # client - in another window
 $ firefox "http://localhost:8080/templates/test.tmpl?title=Templates&arg1=foo&arg2=42"
 ```
+
+You can also define the variable values directly in the template or HTML code by embedding python.
+Here is how you would define the variables for the example above.
+
+```html
+<!DOCTYPE HTML>
+<!-- python
+  params = locals()
+  params['title'] = 'Page Title'
+  params['arg1'] = 'foo'
+  params['arg2'] = 42
+-->
+.
+.
+```
+
+Embedded python code can do much more than simply substitution because 
+it can use the full power of python. See www/template/example.html for
+an example.
 
 ## Example 10. Redirection.
 
