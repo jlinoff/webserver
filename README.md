@@ -9,7 +9,8 @@ customized using plugins.
 
 This is an all-in-one solution. You do not need to separate out your
 server from your code and you do not need a web server gateway
-interface (WSGI). Just run this single program with a custom plugin.
+interface (WSGI). Just run this single program with a custom plugin
+or use the default plugin.
 
 It is not replacement for production systems. It is more of a
 demonstration project that shows how all of the pieces fit together.
