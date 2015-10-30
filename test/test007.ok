@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>WebServer Demo</title>
+    <link rel="icon" type="image/png" href="webserver.png">
+    <link href="webserver.css" rel="stylesheet">
+    <script src="webserver.js"></script>
+  </head>
+  <body>
+    <div class="page">
+
+      <!-- HEADER -->
+      <div class="bgcolor1">
+	<table width="100%">
+	  <tbody>
+	    <tr valign="middle">
+	      <td class="header_left">
+		<img src="webserver.png" width="64" height="64">
+	      </td>
+	      <td style="text-align: left">
+		<h2>Demo Page</h2>
+	      </td>
+	      <td style="text-align: right; font-size: 80%">
+		<div style="position: absolute; text-align: left; right: 18px; top: 30px">
+		  About Us
+		  <br>
+		  Careers
+		</div>
+	      </td>
+	    </tr>
+	  </tbody>
+	</table>
+      </div>
+
+      <!-- BODY -->
+      <div>
+        <p>
+          This page demonstrates the features of the default request handler.
+        </p>
+        <p>
+          The table below presents the features. Click on the individual URLs to see
+          the behavior described.
+        </p>
+        <table border="1" cellpadding="3">
+          <thead>
+            <tr class="bgcolor1">
+              <th>ID</th>
+              <th>URL</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td align="right">1</td>
+              <td align="left"><a href="/@">/@</a></td>
+              <td align="left">Display the web root directory.</td>
+            </tr>
+            <tr>
+              <td align="right">2</td>
+              <td align="left"><a href="/webserver/info/">/webserver/info/</a></td>
+              <td align="left">Display web server internal information.</td>
+            </tr>
+            <tr>
+              <td align="right">3</td>
+              <td align="left"><a href="/system/name/">/sys/name/</a></td>
+              <td align="left">Execute 'uname -a' to get the system name.</td>
+            </tr>
+            <tr>
+              <td align="right">4</td>
+              <td align="left"><a href="/scripts/script.sh">/scripts/script.sh</a></td>
+              <td align="left">View the file as plain text unless it is an HTML file.</td>
+            </tr>
+            <tr>
+              <td align="right">5</td>
+              <td align="left"><a href="/scripts/script.sh@">/scripts/script.sh@</a></td>
+              <td align="left">Always view the file as plain text.</td>
+            </tr>
+            <tr>
+              <td align="right">6</td>
+              <td align="left"><a href="/scripts/script.sh!?content-type=text/plain">/scripts/script.sh!?content-type=text/plain</a></td>
+              <td align="left">Try to execute the file and display the output.</td>
+            </tr>
+            <tr>
+              <td align="right">7</td>
+              <td align="left"><a href="/scripts/script.sh!?content-type=text/html">/scripts/script.sh!?content-type=text/html</a></td>
+              <td align="left">Try to execute the file and interpret the output as HTML.</td>
+            </tr>
+            <tr>
+              <td align="right">8</td>
+              <td align="left"><a href="/templates/test.tmpl?title=Template%20Test&arg1=foo&arg2=42">/templates/test.tmpl?title=Template%20Test&arg1=foo&arg2=42</a></td>
+              <td align="left">Demonstrate how templates work.</td>
+            </tr>
+            <tr>
+              <td align="right">9</td>
+              <td align="left"><a href="/templates/test.tmpl@">/templates/test.tmpl@</a></td>
+              <td align="left">View the template source code.</td>
+            </tr>
+            <tr>
+              <td align="right">10</td>
+              <td align="left"><a href="/webserver.html">/webserver.html</a></td>
+              <td align="left">Play with GET/POST operations.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          You can define your own request handler by
+          running '<code>webserver.py -g >my_request_handler.py</code>'
+          and then customizing it.
+        </p>
+        <p>
+          You then access the new request handler by specifing the plugin option:
+          '<code>webserver.py --plugin my_request_handler</code>'.
+        </p>
+      </div>
+      
+      <!-- FOOTER -->
+      <div class="footer_outer bgcolor1">
+	<div id="myfooter">
+	  <div style="color: red">
+	    <p>WARNING: Unobtrusive Javascript not working!</p>
+	  </div>
+	</div>
+      </div>
+    </div>
+  </body>
+</html>

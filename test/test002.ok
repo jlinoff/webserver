@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Webserver - Directory</title>
+  </head>
+  <body>
+    <pre>
+/Users/jlinoff/work/webserver/www/
+
+      4480  file  <a href="/index.html">index.html</a>
+       170  dir   <a href="/plugins">plugins</a>
+       102  dir   <a href="/scripts">scripts</a>
+       102  dir   <a href="/templates">templates</a>
+       310  file  <a href="/webserver.css">webserver.css</a>
+      1787  file  <a href="/webserver.html">webserver.html</a>
+       689  file  <a href="/webserver.js">webserver.js</a>
+     39872  file  <a href="/webserver.png">webserver.png</a>
+    </pre>
+  </body>
+</html>
