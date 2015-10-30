@@ -24,7 +24,9 @@ content from the current directory. To get a feeling for the
 features available point it to the www directory that is included
 in the repository.
 
-   $ ./webserver.py --webdir www
+```bash
+$ ./webserver.py --webdir www
+```
 
 This will start up an HTTP server listening on port 8080 for the local
 host using the current directory as the root of the web directory
@@ -32,7 +34,9 @@ handling requests with the built in default request handler.
 
 You can then view the output using favorite browser:
 
-   $ firefox localhost:8080
+```bash
+$ firefox localhost:8080
+```
 
 This is what it will look like:
 
