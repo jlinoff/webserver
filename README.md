@@ -159,6 +159,20 @@ $ ./webserver.py --webdir www -L debug
 $ firefox "http://localhost:8080/templates/test.tmpl?title=Templates&arg1=foo&arg2=42"  # client - in another window
 ```
 
+## Example 10. Redirection.
+
+This example shows how redirection works in the default plugin. It
+recognizes the `http://localhost:8080/redirect/to/` and then redirects
+to the specified internal or external URL. An external url is defined
+by a '/http/' or '/https/' prefix.
+
+```bash
+$ ./webserver.py --webdir www -L debug
+$ firefox "http://localhost:8080/redirect/to/https/google.com"  # client - in another window --> external, https://google.com
+$ firefox "http://localhost:8080/redirect/to/webserver.html"  # client - in another window --> internal, /webserver.html
+```
+
+
 ## Plugins
 
 Plugins are python modules that implement a callback function from the

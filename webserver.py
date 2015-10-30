@@ -907,6 +907,29 @@ def default_request_handler(req):
             sts, out = runcmd('uname -a')
             send(req, 'text/plain', out)
             return True
+        elif re.search(r'^/redirect/to/.*$', req.m_urlpath):
+            # This is a special dummy path that tells the handler to
+            # redirect to the specified URL.
+            # If the first part is http/ or https/ it will
+            # be converted to https:// otherwise it is treated as
+            # an abs path from the root of the web directory.
+            # Examples:
+            #    /redirect/to/https/google.com --> https://google.com
+            #    /redirect/to/webserver.html   --> /webserver.html
+            url = req.m_urlpath[len('/redirect/to'):]
+            url = re.sub(r'^/(http)(s)?/', r'\1\2://', url)
+            logger.debug('REDIRECT: "{0}.'.format(url))
+            req.send_response(301)
+            req.send_header('Location', url)
+            
+            # Send cookie values, if any.
+            if req.headers.has_key('cookie'):
+                cookies = Cookie.SimpleCookie(self.headers.getheader('cookie'))
+                for cookie in cookies.values():
+                    req.send_header('Set-Cookie', cookie.output(header='').lstrip())
+                    
+            req.end_headers()
+            return True
         elif re.search(r'@$', req.m_urlpath):
             # If '@' appears at the end of a directory, generate a directory
             # listing even if an index.html is present.
