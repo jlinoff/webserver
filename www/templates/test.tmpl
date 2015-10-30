@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+
+<!-- This file demonstrates how to create HTML templates. -->
+<!-- The format is based on the python string.Formatter class. -->
+<!-- This example has three variables: title, arg1 and arg2. -->
+<!-- You can fill them in using URL parameters (GET) as follows. -->
+<!--   http://localhost:8080/templates/test.tmpl?title=Template%20Test&arg1=foo&arg2=32 -->
+<!-- The system recognizes templates by the .tmpl extension. -->
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{title}</title>
+  </head>
+  <body>
+    <h2>{title}</h2>
+    <pre>
+      arg1 = {arg1}
+      arg2 = {arg2}
+    </pre>
+  </body>
+</html>

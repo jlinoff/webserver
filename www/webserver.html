@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>webserver.py test</title>
+    <!-- Define my own favicon.ico using PNG format. -->
+    <!-- Works in FF and Chrome. -->
+    <link rel="icon" type="image/png" href="webserver.png">
+    <link href="webserver.css" rel="stylesheet">
+    <script src="webserver.js"></script>
+  </head>
+  <body>
+    <div class="page">
+
+      <!-- HEADER -->
+      <div class="bgcolor1">
+	<table width="100%">
+	  <tbody>
+	    <tr valign="middle">
+	      <td class="header_left">
+		<img src="webserver.png" width="64" height="64">
+	      </td>
+	      <td style="text-align: left">
+		<h2>Simple Web Server</h2>
+	      </td>
+	      <td style="text-align: right; font-size: 80%">
+		<div style="position: absolute; text-align: left; right: 18px; top: 30px">
+		  About Us
+		  <br>
+		  Careers
+		</div>
+	      </td>
+	    </tr>
+	  </tbody>
+	</table>
+      </div>
+
+      <!-- BODY -->
+      <div>
+	<p>GET/POST Testing</p>
+
+	<fieldset>
+	  <legend>Form Using GET</legend>
+	  <form method="get">
+	    <p>Enter a GET argument: <input type="text" name="get_arg1"></p>
+	    <p>Enter another GET argument: <input type="text" name="get_arg2"></p>
+	    <input type="submit" value="GET Submit">
+	  </form>
+	</fieldset>
+	<p>&nbsp;</p>
+	<fieldset>
+	  <legend>Form Using POST</legend>
+	  <form method="post">
+	    <p>Enter a POST argument: <input type="text" name="post_arg1"></p>
+	    <p>Enter another POST argument: <input type="text" name="post_arg2"></p>
+	    <input type="submit" value="POST Submit">
+	  </form>
+	</fieldset>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer_outer bgcolor1">
+	<div id="myfooter">
+	  <div style="color: red">
+	    <p>WARNING: Unobtrusive Javascript not working!</p>
+	  </div>
+	</div>
+      </div>
+  </body>
+</html>
