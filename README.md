@@ -172,10 +172,10 @@ use another name if you wish. It accepts a single argument: the
 request object which is derived from the
 SimpleHTTPServer.SimpleHTTPRequestHandler). It has three additional
 functions that let you access the server logger and the server
-options:
+options where req is the request object:
 
-1. res.ws_get_logger() - get the server logging object
-2. res.ws_get_opts() - get the server options object
+1. req.ws_get_logger() - get the server logging object
+2. req.ws_get_opts() - get the server options object
 3. req.ws_get_url_prefix() - get the URL prefix
 
 To see how to access the options take a look at the webserver_info()
