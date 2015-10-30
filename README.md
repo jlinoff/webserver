@@ -237,6 +237,31 @@ Summary
    Total:    9
 ```
 
+## Options
+
+These are the options that available.
+
+Short          | Long                     | Description
+-------------- | -------------------------| -----------
+-c FILE        | --cert FILE              | Certificate file for HTTPS.<br>Defaut=`None`.
+-d             | --daemonize              | Daemonize the server.<br>You must specify --log-file and --pid-file.<br>You would normally not use this on a production system. Instead you would use process management servers like systemd or supervisord.<br>Default=`False` (console mode).
+-e ENTRY       | --entry ENTRY            | The entry point for the plug-in module (`--plugin`).<br>Thhe function accepts a single argument: the request object.<br>Default=`request_handler`.
+-g             | --generate               | Generate the default plug-in module to stdout and exit.<br>You can use it to bootstrap a custom plug-in.
+-h             | --help                   | Detailed help message.
+-H NAME        | --host NAME              | The host name. It can also be an IP address.<br>Default=`localhost`.
+               | --https                  | HTTPS mode.<br>Default=`False` (HTTP mode).
+-l FILE        | --log-file FILE          | The log file.<br>Default=`None` (no file).
+-L LEVEL       | --log-level&nbsp;LEVEL   | Define the logging level.<br>Choices=`notset, debug, info, warning, error, critical`.<br>Default=`info`.
+               | --log-count COUNT        | The maximum number of rollover log files.<br>Default=`4`.
+               | --log-format&nbsp;FORMAT | The log format from the python logging module.<br>Default='`%(asctime)s %(filename)s %(levelname)-7s %(lineno)5d %(message)s`'.
+               | --log-size SIZE          | The maximum log file size before rollover.<br>Acceptable suffixes: `k=KB, m=MB, g=GB`<br>Default=`10m`.
+-p PORT        | --port PORT              | Port. Must be in the range [1..65535].<br>Default=`8080`.
+-P&nbsp;MODULE | --plugin&nbsp;MODULE     | Python plugin module. It is the path to a `.py` file.<br>Default=`None` (no plugin).
+-q FILE        | --pid-file FILE          | PID file using when daemonizing the process.<br>Default=`None` (no PID file).
+-V             | --version                | Display the program version number and exit.
+-w DIR         | --webdir DIR             | The web root directory.<br>Default=`.` (current directory).
+-x STRING      | --extra STRING           | Extra arguments for a custom plugin.<br>You can have as many extra arguments as you want. The interpretation is up to the plug-in. The default plug-in ignores them.<br>Default=`None`.
+
 ## TODO
 
 This is list of TODO items.
@@ -244,6 +269,7 @@ This is list of TODO items.
 1. Convert to use python 3.
 2. Add support for sessions.
 3. Write an example that shows how to accept a username and password.
+4. Extend template handling to support setting variable values and including files.
 
 ## Final Thoughts
 
