@@ -193,9 +193,9 @@ the default plugin that is used if a custom plugin is not specified.
 The test subdirectory contains tests in the test.sh script. You must have
 curl and wget installed for the tests to work.
 
-To run the tests type: "./test.sh 2>&1|tee test.log". That will run the
+To run the tests type: "`./test.sh 2>&1|tee test.log`". That will run the
 tests and capture the output in test.log. If all of the tests pass you
-will a summary that looks like this:
+will see a summary that looks like this:
 
 ```bash
 # ================================================================ #
