@@ -651,6 +651,9 @@ Default=%(default)s (current directory).
                         type=str,
                         metavar=('STRING'),
                         help='''Extra arguments for custom plugins.
+You can have as many extra arguments as you want.
+The interpretation is up to the plugin.
+The default plug-in ignores them.
 Default=%(default)s.
 ''')
     
