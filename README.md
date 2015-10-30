@@ -43,7 +43,119 @@ This is what it will look like:
 
    ![screenshot](doc/image01.png)
 
-See the specific examples in the help below for more details.
+See the specific examples in the help below for more usage details.
+
+One interesting feature of the default plug-in is that it allows you
+to embed python directoy in your HTML. For a custom system you may
+want to get rid of the other features and just keep this one.
+
+## Python Embedded in HTML
+
+You can embed python code directly in your HTML and the default
+plug-in will process it. This allows dynamic web pages to be created.
+
+Here is a very simple example of how it works.
+
+```html
+<!DOCTYPE HTML>
+<!-- python
+  params = locals()
+  params['title'] = 'Title of Page'
+  params['arg1'] = 'foo'
+  params['arg2'] = 42
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{title}</title>
+  </head>
+  <body>
+    <pre>
+     arg1 = {arg1}
+     arg2 = {arg2}
+    </pre>
+  </body>
+</html>
+```
+
+As you can see, the python code defines the values of variables that
+used in the HTML.
+
+The format of the variables is the same that used for string.format()
+operations (string.Formatter objects) so they are very flexible.
+
+The embedded python can also reference other files. Here is an
+example of how that works:
+
+```html
+<!DOCTYPE html>
+<!-- python
+  # Define the variables used on the page using
+  # the full power of python.
+  # The params dictionary is defined by the
+  # request handler.
+  import datetime
+  import os
+  import sys
+      
+  def read_file(params, ifn):
+    '''
+    Read a file.
+    '''
+    try:
+      ifn = os.path.join(params['sysdir'], ifn)
+      with open(ifn, 'r') as ifp:
+        return ifp.read()
+    except IOError as exc:
+      return 'Read failed for {0}: {1!r}.'.format(ifn, exc)
+    
+  params = locals()
+      
+  params['page_header'] = read_file(params, 'page_header.html')
+  params['page_footer'] = read_file(params, 'page_footer.html')
+  params['title'] = 'Template Test of Embedded Python'
+      
+  # This is referenced by the page_header after the substitution.
+  params['date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+      
+  params['python_version'] = 'Python {0}.{1}.{2}'.format(sys.version_info[0],
+                                                             sys.version_info[1],
+                                                             sys.version_info[2])
+  data = ''
+  for i in range(5):
+     data += '   {0} Count {0}\n'.format(i)
+  params['data'] = data[:-1]  # strip the last new line
+    
+  params['top'] = '<a href="/">Top</a>'
+  -->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Template Test</title>
+    <link rel="icon" type="image/png" href="/webserver.png">
+    <link href="/webserver.css" rel="stylesheet">
+    <script src="/webserver.js"></script>
+  </head>
+  <body>
+    <!-- page header (references {title} and {date}) -->
+    {page_header}
+        
+    <!-- page body -->
+    <pre>
+{python_version}
+    
+Loop Data
+{data}
+    </pre>
+{top}    
+    <!-- page footer -->
+    {page_footer}
+  </body>
+</html>
+```
+
+The python code will be left justified automatically but other than
+that it must have proper indenting.
 
 ## Example 1. Getting Help
 
@@ -270,7 +382,6 @@ This is list of TODO items.
 1. Convert to use python 3.
 2. Add support for sessions.
 3. Write an example that shows how to accept a username and password.
-4. Extend template handling to support setting variable values and including files.
 
 ## Final Thoughts
 

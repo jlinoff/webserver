@@ -111,6 +111,26 @@
               <td align="left"><a href="/redirect/to/webserver.html">/redirect/to/webserver.html</a></td>
               <td align="left">Demonstrate redirection to an internal page.</td>
             </tr>
+            <tr>
+              <td align="right">13</td>
+              <td align="left"><a href="/templates/example.tmpl@">/templates/example.tmpl@</a></td>
+              <td align="left">View the template source code with embedded python.</td>
+            </tr>
+            <tr>
+              <td align="right">14</td>
+              <td align="left"><a href="/templates/example.tmpl">/templates/example.tmpl</a></td>
+              <td align="left">See the template in action with nested variables and other cool stuff.</td>
+            </tr>
+            <tr>
+              <td align="right">15</td>
+              <td align="left"><a href="/templates/example.html@">/templates/example.html@</a></td>
+              <td align="left">View the HTML template source code with embedded python.</td>
+            </tr>
+            <tr>
+              <td align="right">16</td>
+              <td align="left"><a href="/templates/example.html">/templates/example.html</a></td>
+              <td align="left">See the HTML template in action with nested variables and other cool stuff.</td>
+            </tr>
           </tbody>
         </table>
         <p>

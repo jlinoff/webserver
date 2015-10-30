@@ -10,13 +10,13 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Template Test</title>
+    <title>{title}</title>
   </head>
   <body>
-    <h2>Template Test</h2>
+    <h2>{title}</h2>
     <pre>
-      arg1 = foo
-      arg2 = 42
+      arg1 = {arg1}
+      arg2 = {arg2}
     </pre>
   </body>
 </html>

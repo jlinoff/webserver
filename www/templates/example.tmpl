@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!-- python
+  # Define the variables used on the page using
+  # the full power of python.
+  # The params dictionary is defined by the
+  # request handler.
+  import datetime
+  import os
+  import sys
+  
+  def read_file(params, ifn):
+    '''
+    Read a file.
+    '''
+    try:
+      ifn = os.path.join(params['sysdir'], ifn)
+      with open(ifn, 'r') as ifp:
+        return ifp.read()
+    except IOError as exc:
+      return 'Read failed for {0}: {1!r}.'.format(ifn, exc)
+
+  params = locals()
+  
+  params['page_header'] = read_file(params, 'page_header.html')
+  params['page_footer'] = read_file(params, 'page_footer.html')
+  params['title'] = 'Template Test of Embedded Python'
+  
+  # This is referenced by the page_header after the substitution.
+  params['date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+  
+  params['python_version'] = 'Python {0}.{1}.{2}'.format(sys.version_info[0],
+                                                         sys.version_info[1],
+                                                         sys.version_info[2])
+  data = ''
+  for i in range(5):
+     data += '   {0} Count {0}\n'.format(i)
+  params['data'] = data[:-1]  # strip the last new line
+
+  params['top'] = '<a href="/">Top</a>'
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Template Test</title>
+    <link rel="icon" type="image/png" href="/webserver.png">
+    <link href="/webserver.css" rel="stylesheet">
+    <script src="/webserver.js"></script>
+  </head>
+  <body>
+    <!-- page header (references {title} and {date}) -->
+    {page_header}
+    
+    <!-- page body -->
+    <pre>
+{python_version}
+
+Loop Data
+{data}
+    </pre>
+{top}    
+    <!-- page footer -->
+    {page_footer}
+  </body>
+</html>
