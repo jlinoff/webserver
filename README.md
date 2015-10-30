@@ -153,9 +153,16 @@ Loop Data
   </body>
 </html>
 ```
-
 The python code will be left justified automatically but other than
 that it must have proper indenting.
+
+This is what the resulting page looks like:
+
+![screenshot](doc/image02.png)
+
+This is what the raw page looks like:
+
+![screenshot](doc/image03.png)
 
 The following variables are available to embedded python code.
 
