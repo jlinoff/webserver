@@ -34,6 +34,10 @@ You can then view the output using favorite browser:
 
    $ firefox localhost:8080
 
+This is what it will look like:
+
+   ![screenshot](doc/image01.png)
+
 See the specific examples in the help below for more details.
 
 ## Example 1. Getting Help
