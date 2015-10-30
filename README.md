@@ -59,7 +59,9 @@ allows you to browse the current directory.
 
 ```bash
 $ ./webserver.py
-$ firefox http://localhost:8080  # client - in another window
+
+$ # client - in another window
+$ firefox http://localhost:8080
 ```
 
 ## Example 3: HTTPS server for current directory on port 8443.
@@ -75,7 +77,9 @@ $ openssl req \
      -keyout server.key -out server.crt
 $ cat server.crt server.key >server.pem
 $ ./webserver.py --https --cert ./server.pem --port 8443
-$ firefox http://localhost:8443  # client - in another window
+
+$ # client - in another window
+$ firefox http://localhost:8443
 ```
 
 ## Example 4: HTTP server for a project directory.
@@ -85,7 +89,9 @@ directory.
 
 ```bash
 $ ./webserver.py --webdir /opt/projects/mysite/www
-$ firefox http://localhost:8080  # client - in another window
+
+$ # client - in another window
+$ firefox http://localhost:8080
 ```
 
 ## Example 5: Daemon HTTP server for a project directory.
@@ -100,7 +106,9 @@ $ ./webserver.py \
       --daemonize \
       --log-file /opt/projects/mysite/log/webserver.log \
       --pid-file /opt/projects/mysite/log/webserver.pid
-$ firefox http://localhost:8080  # client - in another window
+
+$ # client - in another window
+$ firefox http://localhost:8080
 ```
 
 ## Example 6: HTTP server for a project directory with custom plugin.
@@ -116,7 +124,9 @@ $ ./webserver.py \
       --webdir /opt/projects/mysite/www \
       --plugin /opt/projects/mysite/src/plugin.py \
       --extra 'plugin_param1=foobar'
-$ firefox http://localhost:8080  # client - in another window
+
+$ # client - in another window
+$ firefox http://localhost:8080
 ```
 
 ## Example 7: Full blown example for daemonized HTTPS server.
@@ -156,7 +166,9 @@ This example shows how templates work by filling three variables.
 
 ```bash
 $ ./webserver.py --webdir www -L debug
-$ firefox "http://localhost:8080/templates/test.tmpl?title=Templates&arg1=foo&arg2=42"  # client - in another window
+
+$ # client - in another window
+$ firefox "http://localhost:8080/templates/test.tmpl?title=Templates&arg1=foo&arg2=42"
 ```
 
 ## Example 10. Redirection.
@@ -168,8 +180,12 @@ by a '/http/' or '/https/' prefix.
 
 ```bash
 $ ./webserver.py --webdir www -L debug
-$ firefox "http://localhost:8080/redirect/to/https/google.com"  # client - in another window --> external, https://google.com
-$ firefox "http://localhost:8080/redirect/to/webserver.html"  # client - in another window --> internal, /webserver.html
+
+$ # client - in another window --> external, https://google.com
+$ firefox "http://localhost:8080/redirect/to/https/google.com"
+
+$ # client - in another window --> internal, /webserver.html
+$ firefox "http://localhost:8080/redirect/to/webserver.html"
 ```
 
 
