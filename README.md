@@ -146,8 +146,10 @@ example of how that works:
     
 Loop Data
 {data}
+
+Session Id: {sid}
     </pre>
-{top}    
+    {top}    
     <!-- page footer -->
     {page_footer}
   </body>
