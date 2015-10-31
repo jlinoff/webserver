@@ -421,7 +421,11 @@ Short          | Long                     | Description
 This is list of TODO items.
 
 1. Convert to use python 3.
-2. Write an example that shows how to accept a username and password.
+2. Write an example that shows how to manage a login using the session id.
+  1. Both the username and password are hashed. Nothing is stored in plaintext.
+  2. The hashed values are stored in a local JSON file.
+  3. The server loads the username and password hash data from the file when a login is requested.
+  4. Successful login is denote by a cookie.
 
 ## Final Thoughts
 
