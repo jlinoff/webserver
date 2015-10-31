@@ -168,14 +168,14 @@ This is what the raw page looks like:
 
 The following variables are available to embedded python code.
 
-HTML Variable | Python Variable       | Description
-------------- | --------------------- | -----------
-{sid}         | `params['sid']`       | The unique session id. Can be used to identify unique users.
-{sysdir}      | `params['sysdir']`    | The system directory path (ex. `opt/webdir/www/templates`). <br>Used to construct file names for reading nested files.
-{sysfile}     | `params['sysfile']`   | The system file path (ex. `/opt/webdir/www/templates/example.html`).
-{urldir}      | `params['urldir']`    | The URL directory path (ex. `/templates`).
-{urlfile}     | `params['urlfile']`   | The URL file path (ex. `/templates/example.html`).
-{urlprefix}   | `params['urlprefix']` | the protocol, domain and port in URL format (ex. `http://localhost:8080`)
+HTML Variable   | Python Variable       | Description
+--------------- | --------------------- | -----------
+`{sid}`         | `params['sid']`       | The unique session id. Can be used to identify unique users.
+`{sysdir}`      | `params['sysdir']`    | The system directory path (ex. `opt/webdir/www/templates`). <br>Used to construct file names for reading nested files.
+`{sysfile}`     | `params['sysfile']`   | The system file path (ex. `/opt/webdir/www/templates/example.html`).
+`{urldir}`      | `params['urldir']`    | The URL directory path (ex. `/templates`).
+`{urlfile}`     | `params['urlfile']`   | The URL file path (ex. `/templates/example.html`).
+`{urlprefix}`   | `params['urlprefix']` | the protocol, domain and port in URL format (ex. `http://localhost:8080`)
 
 You are not limited to these. You can define your own in the embedded python code as shown in the previous examples.
 
