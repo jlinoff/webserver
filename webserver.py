@@ -1128,25 +1128,11 @@ def default_request_handler(req):
             return True
         return False
 
-    def compile_template(data, depth=8):
+    def define_template_parameters(req):
         '''
-        Compile a template with embedded python code.
-
-        The python code sits between <!-- python and --> statements.
-        It sets the parameter values so that they can be used
-        for variable substitution.
+        Define the template parameters.
         '''
-
-        # Find all of the python fragments.
-        # <!-- python
-        #   # Set the variables here.
-        #   params = locals()
-        #   params['title'] = 'Template Test of Embedded Python'
-        # -->
-        fragments = re.findall(r'<!-- python(.*?)-->', data, flags=re.DOTALL | re.MULTILINE)
-        if len(fragments) == 0:
-            return data  # No python to process.
-
+        # Setup the parameters.
         params = {}
         for key in req.m_params:
             val = req.m_params[key][0]
@@ -1162,26 +1148,51 @@ def default_request_handler(req):
 
         params['urlprefix'] = req.ws_get_url_prefix()
         params['sid'] = req.m_sid  # session id
+        return params
 
-        # Load up all of the variables.
-        for fragment in fragments:
-            # left justify so that statements are in the leftmost column.
-            min_indent = min(map(len, re.findall('^([ ]+)', fragment, re.MULTILINE)))
-            fragment = re.sub('^[ ]{' + str(min_indent) + '}', '', fragment, flags=re.MULTILINE)
-            exec(fragment, globals(), params)
 
-        # Remove the python fragments.
-        html = re.sub(r'<!-- python.*?-->\s*\n?', '', data, flags=re.DOTALL | re.MULTILINE).strip()
+    def compile_template(data, depth=8):
+        '''
+        Compile a template with embedded python code.
 
-        # Substitute the values for the variables.
-        # This must be done multiple times because
-        # there may be variables defined in nested
-        # files.
-        html = html.format(**params)
-        for i in range(depth):
-            if not re.search(r'[^{][{][^}]+[}][^}]', html):
-                break
+        The python code sits between <!-- python and --> statements.
+        It sets the parameter values so that they can be used
+        for variable substitution.
+        '''
+        params = define_template_parameters(req)
+
+        # Find all of the python fragments.
+        # <!-- python
+        #   # Set the variables here.
+        #   params = locals()
+        #   params['title'] = 'Template Test of Embedded Python'
+        # -->
+        fragments = re.findall(r'<!-- python(.*?)-->', data, flags=re.DOTALL | re.MULTILINE)
+        if len(fragments) == 0:
+            html = data
+            if re.search(r'[^{][{][^}]+[}][^}]', html):
+                html = html.format(**params)
+        else:
+            # Load up all of the fragments to get all of the
+            # parameters.
+            for fragment in fragments:
+                # left justify so that statements are in the leftmost column.
+                min_indent = min(map(len, re.findall('^([ ]+)', fragment, re.MULTILINE)))
+                fragment = re.sub('^[ ]{' + str(min_indent) + '}', '', fragment, flags=re.MULTILINE)
+                exec(fragment, globals(), params)
+
+            # Remove the python fragments.
+            html = re.sub(r'<!-- python.*?-->\s*\n?', '', data, flags=re.DOTALL | re.MULTILINE).strip()
+
+            # Substitute the values for the variables.
+            # This must be done multiple times because
+            # there may be variables defined in nested
+            # files.
             html = html.format(**params)
+            for i in range(depth):
+                if not re.search(r'[^{][{][^}]+[}][^}]', html):
+                    break
+                html = html.format(**params)
 
         return html
 
@@ -1318,7 +1329,8 @@ def default_request_handler(req):
             out = ifp.read()
 
         # Allow embedded python in HTML code.
-        out = compile_template(out)
+        if ctype == 'text/html':
+            out = compile_template(out)
 
         # Create the page.
         send(req, ctype, out)
@@ -1457,10 +1469,13 @@ def generate(opts):
             print("'''")
             print('# Default request handler.')
             print("'''")
+            print('import Cookie')
             print('import cgi')
             print('import mimetypes')
             print('import os')
+            print('import random')
             print('import re')
+            print('import string')
             print('import subprocess')
             print('')
         elif line.find('def ') == 0:

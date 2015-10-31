@@ -1,10 +1,13 @@
 '''
 # Default request handler.
 '''
+import Cookie
 import cgi
 import mimetypes
 import os
+import random
 import re
+import string
 import subprocess
 
 def request_handler(req):
@@ -61,6 +64,10 @@ def request_handler(req):
 
         http://localhost:8080/templates/test.tmpl?titleMy%20Title&arg1=Foo7arg2=23.
 
+    Templates can also embed python code directly with the HTML to
+    provide a lot of flexibility. See the www/templates/example.tmpl
+    template to see how it works.
+
     The variables in the template are {title}, {arg1} and {arg2}.
 
     This implementation shows the server has the following key features:
@@ -103,9 +110,9 @@ def request_handler(req):
                 params = cgi.parse_qs(data, keep_blank_values=1)
 
             # some browser send 2 more bytes
-            rdy, _, _ = select.select([self.connection], [], [], 0)
+            rdy, _, _ = select.select([req.connection], [], [], 0)
             if rdy:
-                self.rfile.read(2)
+                req.rfile.read(2)
 
         # Get the protocol.
         protocol = 'HTTPS' if opts.https else 'HTTP'
@@ -114,13 +121,40 @@ def request_handler(req):
         setattr(req, 'm_params', params)     # parameters from GET or POST
         setattr(req, 'm_protocol', protocol) # HTTP or HTTPS
 
+        # Look for cookies so that we can set up the Set-Cookie response.
+        # If cookies exist, use them.
+        # If cookies do not exit, create a cookies entry.
+        if req.headers.has_key('cookie'):
+            cookie = Cookie.SimpleCookie(req.headers.getheader('cookie'))
+        else:
+            cookie = Cookie.SimpleCookie()
+
+        key = 'ws_sid'  # cookie id
+        if cookie.has_key(key):
+            sid = cookie[key].value
+        else:
+            sid = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+            cookie[key] = sid
+
+        setattr(req, 'm_cookie', cookie)
+        setattr(req, 'm_sid', sid)  # session id
+
         # Debug messages.
-        logger.debug('Handling {0} {1} request {2}'.format(req.m_protocol,
-                                                           req.command,
-                                                           req.path))
-        logger.debug('   UrlPath  : {0}'.format(req.m_urlpath))
-        logger.debug('   SysPath  : {0}'.format(req.m_syspath))
-        logger.debug('   Params   : {0!r}'.format(req.m_params))
+        if opts.log_level == 'debug':
+            logger.debug('Handling {0} {1} request {2}'.format(req.m_protocol,
+                                                               req.command,
+                                                               req.path))
+            logger.debug('   UrlPath  : {0}'.format(req.m_urlpath))
+            logger.debug('   SysPath  : {0}'.format(req.m_syspath))
+            logger.debug('   Params   : {0!r}'.format(req.m_params))
+            logger.debug('   SessionId: {0}'.format(req.m_sid))
+
+            logger.debug('HTTP Headers')
+            entries = vars(req)
+            headers = str(entries['headers']).replace('\r\n', '\\r\\n\n')
+            for header in headers.split('\n'):
+                if len(header):  # skip zero length headers
+                    logger.debug('   {0} {1}'.format(len(header), header))
 
     def send(req, ctype, out):
         '''
@@ -130,11 +164,9 @@ def request_handler(req):
         req.send_header('Content-type', ctype)
         req.send_header('Content-length', len(out))
 
-        # Send cookie values, if any.
-        if req.headers.has_key('cookie'):
-            cookies = Cookie.SimpleCookie(self.headers.getheader('cookie'))
-            for cookie in cookies.values():
-                req.send_header('Set-Cookie', cookie.output(header='').lstrip())
+        # Cookies - this always resets all of the cookies.
+        for morsel in req.m_cookie.values():  # SimpleCookie object.
+            req.send_header('Set-Cookie', morsel.output(header='').lstrip())
 
         req.end_headers()
 
@@ -288,11 +320,9 @@ def request_handler(req):
             req.send_response(301)
             req.send_header('Location', url)
 
-            # Send cookie values, if any.
-            if req.headers.has_key('cookie'):
-                cookies = Cookie.SimpleCookie(self.headers.getheader('cookie'))
-                for cookie in cookies.values():
-                    req.send_header('Set-Cookie', cookie.output(header='').lstrip())
+            # Cookies - this always resets all of the cookies.
+            for morsel in req.m_cookie.values():  # SimpleCookie object.
+                req.send_header('Set-Cookie', morsel.output(header='').lstrip())
 
             req.end_headers()
             return True
@@ -340,6 +370,74 @@ def request_handler(req):
             return True
         return False
 
+    def define_template_parameters(req):
+        '''
+        Define the template parameters.
+        '''
+        # Setup the parameters.
+        params = {}
+        for key in req.m_params:
+            val = req.m_params[key][0]
+            params[key] = val
+
+        # Load other useful parameters.
+        if os.path.isdir(req.m_syspath):
+            params['sysdir'] = req.m_syspath
+            params['urldir'] = req.m_urlpath
+        else:
+            params['sysdir'] = os.path.dirname(req.m_syspath)
+            params['urldir'] = os.path.dirname(req.m_urlpath)
+
+        params['urlprefix'] = req.ws_get_url_prefix()
+        params['sid'] = req.m_sid  # session id
+        return params
+
+
+    def compile_template(data, depth=8):
+        '''
+        Compile a template with embedded python code.
+
+        The python code sits between <!-- python and --> statements.
+        It sets the parameter values so that they can be used
+        for variable substitution.
+        '''
+        params = define_template_parameters(req)
+
+        # Find all of the python fragments.
+        # <!-- python
+        #   # Set the variables here.
+        #   params = locals()
+        #   params['title'] = 'Template Test of Embedded Python'
+        # -->
+        fragments = re.findall(r'<!-- python(.*?)-->', data, flags=re.DOTALL | re.MULTILINE)
+        if len(fragments) == 0:
+            html = data
+            if re.search(r'[^{][{][^}]+[}][^}]', html):
+                html = html.format(**params)
+        else:
+            # Load up all of the fragments to get all of the
+            # parameters.
+            for fragment in fragments:
+                # left justify so that statements are in the leftmost column.
+                min_indent = min(map(len, re.findall('^([ ]+)', fragment, re.MULTILINE)))
+                fragment = re.sub('^[ ]{' + str(min_indent) + '}', '', fragment, flags=re.MULTILINE)
+                exec(fragment, globals(), params)
+
+            # Remove the python fragments.
+            html = re.sub(r'<!-- python.*?-->\s*\n?', '', data, flags=re.DOTALL | re.MULTILINE).strip()
+
+            # Substitute the values for the variables.
+            # This must be done multiple times because
+            # there may be variables defined in nested
+            # files.
+            html = html.format(**params)
+            for i in range(depth):
+                if not re.search(r'[^{][{][^}]+[}][^}]', html):
+                    break
+                html = html.format(**params)
+
+        return html
+
     def template(req, logger, ext='.tmpl'):
         '''
         Simple template handling using the built in string.Formatter
@@ -372,6 +470,36 @@ def request_handler(req):
 
         When the server sees ".tmpl" files, it will automatically
         substitute the values and display the result.
+
+        You can also embed python directly into the template to set
+        the variables. Here is a simple example:
+
+           <!DOCTYPE HTML>
+           <!-- python
+             params = locals()
+             params['title'] = 'Title of Page'
+             params['arg1'] = 'foo'
+             params['arg2'] = 42
+           -->
+           <html>
+             <head>
+               <meta charset="utf-8">
+               <title>{title}</title>
+             </head>
+             <body>
+               <pre>
+                arg1 = {arg1}
+                arg2 = {arg2}
+               </pre>
+             </body>
+           </html>
+
+        You can also read in nested files with variables and
+        fill them in. See www/templates/example.tmpl for a
+        more complex example.
+
+        The data in the template python code will override
+        the URL parameters.
         '''
         if req.m_urlpath.endswith(ext) is False:
             return False
@@ -382,11 +510,7 @@ def request_handler(req):
         try:
             with open(req.m_syspath, 'r') as ifp:
                 out = ifp.read()
-            kwargs = {}
-            for key in req.m_params:
-                val = req.m_params[key][0]
-                kwargs[key] = val
-            out = out.format(**kwargs)
+            out = compile_template(out)
             send(req, 'text/html', out)
         except IOError:
             res.send_error(404, 'Not found')
@@ -438,13 +562,19 @@ def request_handler(req):
     ctype = req.guess_type(req.m_syspath)
     if ctype in ['application/x-sh', ]:
         ctype = 'text/plain'  # fix .sh
-    logger.debug('   Content  : {0}'.format(ctype))
+    logger.debug('Content type is "{0}".'.format(ctype))
 
     # Load the file data.
     try:
         mode = 'r' if ctype.startswith('text/') else 'rb'
         with open(req.m_syspath, mode) as ifp:
             out = ifp.read()
+
+        # Allow embedded python in HTML code.
+        if ctype == 'text/html':
+            out = compile_template(out)
+
+        # Create the page.
         send(req, ctype, out)
     except IOError:
         req.send_error(404, 'File not found')
