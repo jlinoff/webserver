@@ -168,6 +168,7 @@ The following variables are available to embedded python code.
 
 Variable              | Description
 --------------------- | -----------
+`params['sid']`       | The unique session id.
 `params['sysdir']`    | The system directory path (ex. `opt/webdir/www/templates`). <br>Used to construct file names for reading nested files.
 `params['sysfile']`   | The system file path (ex. `/opt/webdir/www/templates/example.html`).
 `params['urldir']`    | The URL directory path (ex. `/templates`).
@@ -416,8 +417,7 @@ Short          | Long                     | Description
 This is list of TODO items.
 
 1. Convert to use python 3.
-2. Add support for sessions.
-3. Write an example that shows how to accept a username and password.
+2. Write an example that shows how to accept a username and password.
 
 ## Final Thoughts
 

@@ -75,7 +75,7 @@ example of how that works:
       import datetime
       import os
       import sys
-      
+
       def read_file(params, ifn):
         """
         Read a file.
@@ -86,16 +86,16 @@ example of how that works:
             return ifp.read()
         except IOError as exc:
           return 'Read failed for {0}: {1!r}.'.format(ifn, exc)
-    
+
       params = locals()
-      
+
       params['page_header'] = read_file(params, 'page_header.html')
       params['page_footer'] = read_file(params, 'page_footer.html')
       params['title'] = 'Template Test of Embedded Python'
-      
+
       # This is referenced by the page_header after the substitution.
       params['date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-      
+
       params['python_version'] = 'Python {0}.{1}.{2}'.format(sys.version_info[0],
                                                              sys.version_info[1],
                                                              sys.version_info[2])
@@ -103,7 +103,7 @@ example of how that works:
       for i in range(5):
          data += '   {0} Count {0}\n'.format(i)
       params['data'] = data[:-1]  # strip the last new line
-    
+
       params['top'] = '<a href="/">Top</a>'
     -->
     <html>
@@ -117,15 +117,15 @@ example of how that works:
       <body>
         <!-- page header (references {title} and {date}) -->
         {page_header}
-        
+
         <!-- page body -->
         <pre>
     {python_version}
-    
+
     Loop Data
     {data}
         </pre>
-    {top}    
+    {top}
         <!-- page footer -->
         {page_footer}
       </body>
@@ -162,11 +162,13 @@ import imp
 import logging
 import logging.handlers
 import mimetypes
+import random
 import re
 import os
 import socket
 import SocketServer
 import ssl
+import string
 import subprocess
 
 
@@ -760,7 +762,7 @@ The interpretation is up to the plugin.
 The default plug-in ignores them.
 Default=%(default)s.
 ''')
-    
+
     opts = parser.parse_args()
 
     return opts, name
@@ -866,9 +868,9 @@ def default_request_handler(req):
                 params = cgi.parse_qs(data, keep_blank_values=1)
 
             # some browser send 2 more bytes
-            rdy, _, _ = select.select([self.connection], [], [], 0)
+            rdy, _, _ = select.select([req.connection], [], [], 0)
             if rdy:
-                self.rfile.read(2)
+                req.rfile.read(2)
 
         # Get the protocol.
         protocol = 'HTTPS' if opts.https else 'HTTP'
@@ -876,14 +878,41 @@ def default_request_handler(req):
         setattr(req, 'm_syspath', req.translate_path(urlpath))  # system path, file or dir
         setattr(req, 'm_params', params)     # parameters from GET or POST
         setattr(req, 'm_protocol', protocol) # HTTP or HTTPS
-        
+
+        # Look for cookies so that we can set up the Set-Cookie response.
+        # If cookies exist, use them.
+        # If cookies do not exit, create a cookies entry.
+        if req.headers.has_key('cookie'):
+            cookie = Cookie.SimpleCookie(req.headers.getheader('cookie'))
+        else:
+            cookie = Cookie.SimpleCookie()
+
+        key = 'ws_sid'  # cookie id
+        if cookie.has_key(key):
+            sid = cookie[key].value
+        else:
+            sid = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+            cookie[key] = sid
+
+        setattr(req, 'm_cookie', cookie)
+        setattr(req, 'm_sid', sid)  # session id
+
         # Debug messages.
-        logger.debug('Handling {0} {1} request {2}'.format(req.m_protocol,
-                                                           req.command,
-                                                           req.path))
-        logger.debug('   UrlPath  : {0}'.format(req.m_urlpath))
-        logger.debug('   SysPath  : {0}'.format(req.m_syspath))
-        logger.debug('   Params   : {0!r}'.format(req.m_params))
+        if opts.log_level == 'debug':
+            logger.debug('Handling {0} {1} request {2}'.format(req.m_protocol,
+                                                               req.command,
+                                                               req.path))
+            logger.debug('   UrlPath  : {0}'.format(req.m_urlpath))
+            logger.debug('   SysPath  : {0}'.format(req.m_syspath))
+            logger.debug('   Params   : {0!r}'.format(req.m_params))
+            logger.debug('   SessionId: {0}'.format(req.m_sid))
+
+            logger.debug('HTTP Headers')
+            entries = vars(req)
+            headers = str(entries['headers']).replace('\r\n', '\\r\\n\n')
+            for header in headers.split('\n'):
+                if len(header):  # skip zero length headers
+                    logger.debug('   {0} {1}'.format(len(header), header))
 
     def send(req, ctype, out):
         '''
@@ -893,12 +922,10 @@ def default_request_handler(req):
         req.send_header('Content-type', ctype)
         req.send_header('Content-length', len(out))
 
-        # Send cookie values, if any.
-        if req.headers.has_key('cookie'):
-            cookies = Cookie.SimpleCookie(self.headers.getheader('cookie'))
-            for cookie in cookies.values():
-                req.send_header('Set-Cookie', cookie.output(header='').lstrip())
-        
+        # Cookies - this always resets all of the cookies.
+        for morsel in req.m_cookie.values():  # SimpleCookie object.
+            req.send_header('Set-Cookie', morsel.output(header='').lstrip())
+
         req.end_headers()
 
         req.wfile.write(out)
@@ -912,7 +939,7 @@ def default_request_handler(req):
         lines = []
         lines.append('<!DOCTYPE HTML>')
         lines.append('<html>')
-        lines.append('  <head>') 
+        lines.append('  <head>')
         lines.append('    <meta charset="utf-8">')
         lines.append('    <title>Webserver - Directory</title>')
         lines.append('  </head>')
@@ -966,7 +993,7 @@ def default_request_handler(req):
         lines = []
         lines.append('<!DOCTYPE HTML>')
         lines.append('<html>')
-        lines.append('  <head>') 
+        lines.append('  <head>')
         lines.append('    <meta charset="utf-8">')
         lines.append('    <title>Webserver - Directory</title>')
         lines.append('  </head>')
@@ -1050,13 +1077,11 @@ def default_request_handler(req):
             logger.debug('REDIRECT: "{0}.'.format(url))
             req.send_response(301)
             req.send_header('Location', url)
-            
-            # Send cookie values, if any.
-            if req.headers.has_key('cookie'):
-                cookies = Cookie.SimpleCookie(self.headers.getheader('cookie'))
-                for cookie in cookies.values():
-                    req.send_header('Set-Cookie', cookie.output(header='').lstrip())
-                    
+
+            # Cookies - this always resets all of the cookies.
+            for morsel in req.m_cookie.values():  # SimpleCookie object.
+                req.send_header('Set-Cookie', morsel.output(header='').lstrip())
+
             req.end_headers()
             return True
         elif re.search(r'@$', req.m_urlpath):
@@ -1111,7 +1136,7 @@ def default_request_handler(req):
         It sets the parameter values so that they can be used
         for variable substitution.
         '''
-        
+
         # Find all of the python fragments.
         # <!-- python
         #   # Set the variables here.
@@ -1126,7 +1151,7 @@ def default_request_handler(req):
         for key in req.m_params:
             val = req.m_params[key][0]
             params[key] = val
-            
+
         # Load other useful parameters.
         if os.path.isdir(req.m_syspath):
             params['sysdir'] = req.m_syspath
@@ -1134,9 +1159,10 @@ def default_request_handler(req):
         else:
             params['sysdir'] = os.path.dirname(req.m_syspath)
             params['urldir'] = os.path.dirname(req.m_urlpath)
-            
+
         params['urlprefix'] = req.ws_get_url_prefix()
-            
+        params['sid'] = req.m_sid  # session id
+
         # Load up all of the variables.
         for fragment in fragments:
             # left justify so that statements are in the leftmost column.
@@ -1224,7 +1250,7 @@ def default_request_handler(req):
         '''
         if req.m_urlpath.endswith(ext) is False:
             return False
-        
+
         # This is a template.
         # Do the substitution and display the results.
         logger.debug('TEMPLATE: "{0}".'.format(req.m_syspath))
@@ -1272,7 +1298,7 @@ def default_request_handler(req):
         if sysfile is None:
             display_directory(req.m_syspath, req.m_urlpath)
             return
-        
+
         req.m_syspath = sysfile
 
     # Process templates.
@@ -1283,7 +1309,7 @@ def default_request_handler(req):
     ctype = req.guess_type(req.m_syspath)
     if ctype in ['application/x-sh', ]:
         ctype = 'text/plain'  # fix .sh
-    logger.debug('   Content  : {0}'.format(ctype))
+    logger.debug('Content type is "{0}".'.format(ctype))
 
     # Load the file data.
     try:
@@ -1332,6 +1358,7 @@ def create_request_handler_class(opts, logger, request_handler):
         '''
         s_opts = opts
         s_logger = logger
+        allow_reuse_address = True
 
         def ws_get_opts(self):
             '''
@@ -1381,7 +1408,7 @@ def serve(opts, logger, request_handler):
         sys.exit(1)
     if opts.https is False and opts.cert is not None:
         logger.warning('Cert file specified but --https was not specified, did you mean to specify --https?')
-        
+
     try:
         RequestHandlerClass = create_request_handler_class(opts, logger, request_handler)
         port = int(opts.port)
@@ -1466,3 +1493,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
