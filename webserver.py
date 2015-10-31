@@ -172,10 +172,7 @@ import string
 import subprocess
 
 
-# 1.0 - initial load
-# 1.1 - added embedded python support for templates
-# 1.2 - added session id support {sid}
-VERSION = '1.2'
+VERSION = '1.0'
 
 
 def logger_init(opts, name, level=logging.INFO):
