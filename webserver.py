@@ -1091,7 +1091,7 @@ def default_request_handler(req):
             req.m_syspath = req.m_syspath[:-1]
             req.m_urlpath = req.m_urlpath[:-1]
             if os.path.exists(req.m_syspath) is False:
-                res.send_error(404, 'Not found')
+                req.send_error(404, 'Not found')
             elif os.path.isdir(req.m_syspath):
                 display_directory(req.m_syspath, req.m_urlpath)
             elif os.path.isfile(req.m_syspath):
@@ -1100,9 +1100,9 @@ def default_request_handler(req):
                         out = ifp.read()
                     send(req, 'text/plain', out)
                 except IOError:
-                    res.send_error(404, 'Not found')
+                    req.send_error(404, 'Not found')
             else:
-                res.send_error(404, 'Not found')
+                req.send_error(404, 'Not found')
             return True
         elif re.search(r'!$', req.m_urlpath):
             # If '!' appears at the end of the path, execute
@@ -1269,7 +1269,7 @@ def default_request_handler(req):
             out = compile_template(out)
             send(req, 'text/html', out)
         except IOError:
-            res.send_error(404, 'Not found')
+            req.send_error(404, 'Not found')
         except KeyError as exc:
             # At least one of the arguments is not
             # defined. Display the result as plain
@@ -1473,6 +1473,7 @@ def generate(opts):
             print('import os')
             print('import random')
             print('import re')
+            print('import select')
             print('import string')
             print('import subprocess')
             print('')
