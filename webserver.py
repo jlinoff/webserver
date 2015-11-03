@@ -1044,7 +1044,7 @@ def default_request_handler(req):
         proc.wait()
         return proc.returncode, text
 
-    def special_case(res, opts, logger):
+    def special_case(req, opts, logger):
         '''
         Handle special case URLs.
         '''
