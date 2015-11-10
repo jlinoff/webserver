@@ -3,6 +3,7 @@
 '''
 import Cookie
 import cgi
+import datetime
 import mimetypes
 import os
 import random
@@ -79,6 +80,49 @@ def request_handler(req):
         4. It can execute local tools (!).
         5. It can support templates.
     '''
+    def elapsed(dts, now=None):
+        '''
+        Get the elapsed time in seconds.
+        '''
+        if now is None:
+            now = datetime.datetime.now()
+        elapsed = now - dts
+        secs = int(elapsed.total_seconds())
+        return secs
+
+    def expired(dts, max_secs, now=None):
+        '''
+        Has this datetime stamp expired?
+        '''
+        return elapsed(dts) > max_secs
+
+    def init_globals(opts):
+        '''
+        This is where the ws_globals global variable is defined.
+        This global variable contains general webserver data for
+        all sessions.
+        '''
+        global ws_globals
+        if 'ws_globals' not in globals():
+            ws_globals = {}
+
+            # Add in the "extra" variables from the
+            # --extra or -x command line options.
+            if opts.extra is not None:
+                for extra in opts.extra:
+                    key, val = extra.split('=', 1)
+                    key = key.strip()
+                    val = val.strip()
+                    if re.search(r'^\d+$', val):
+                        ws_globals[key] = int(val)
+                    elif re.search(r'^(\d+)?\.\d+$', val) or re.search(r'^(\d+)\.', val):
+                        ws_globals[key] = float(val)
+                    elif val.lower() == 'true':
+                        ws_globals[key] = True
+                    elif val.lower() == 'false':
+                        ws_globals[key] = False
+                    else:
+                        ws_globals[key] = val
 
     def init(req, opts, logger):
         '''
@@ -90,6 +134,9 @@ def request_handler(req):
            req.m_protocol  HTTP or HTTPS
            req.m_params    GET/POST parameters
         '''
+        # Initialize the globals.
+        init_globals(opts)
+
         # Parse the GET options.
         if req.path.find('?') >= 0:
             parts = req.path.split('?')
@@ -115,12 +162,18 @@ def request_handler(req):
             if rdy:
                 req.rfile.read(2)
 
+        # Get the system path and the root path.
+        syspath = req.translate_path(urlpath)
+        sysroot = syspath[:-len(urlpath)]
+
         # Get the protocol.
         protocol = 'HTTPS' if opts.https else 'HTTP'
         setattr(req, 'm_urlpath', urlpath)   # http://localhost:8080/foo/bar?a=b --> /foo/bar
-        setattr(req, 'm_syspath', req.translate_path(urlpath))  # system path, file or dir
+        setattr(req, 'm_syspath', syspath)   # system path, file or dir
+        setattr(req, 'm_sysroot', sysroot)   # system path to the root directory
         setattr(req, 'm_params', params)     # parameters from GET or POST
         setattr(req, 'm_protocol', protocol) # HTTP or HTTPS
+        setattr(req, 'm_headers', [])        # additional headers
 
         # Look for cookies so that we can set up the Set-Cookie response.
         # If cookies exist, use them.
@@ -147,6 +200,7 @@ def request_handler(req):
                                                                req.path))
             logger.debug('   UrlPath  : {0}'.format(req.m_urlpath))
             logger.debug('   SysPath  : {0}'.format(req.m_syspath))
+            logger.debug('   SysRoot  : {0}'.format(req.m_sysroot))
             logger.debug('   Params   : {0!r}'.format(req.m_params))
             logger.debug('   SessionId: {0}'.format(req.m_sid))
 
@@ -156,6 +210,15 @@ def request_handler(req):
             for header in headers.split('\n'):
                 if len(header):  # skip zero length headers
                     logger.debug('   {0} {1}'.format(len(header), header))
+
+    def nocache(req):
+        '''
+        Define nocache headers.
+        '''
+        if len([x for x in req.m_headers if x[0] == 'Cache-Control']) is False:
+            req.m_headers.append(('Cache-Control', 'no-cache, no-store, must-revalidate'))  # HTTP 1.1
+            req.m_headers.append(('Pragma', 'no-cache'))  # HTTP 1.0
+            req.m_headers.append(('Expires', '0'))  # HTTP 1.0 proxies
 
     def send(req, ctype, out):
         '''
@@ -169,54 +232,13 @@ def request_handler(req):
         for morsel in req.m_cookie.values():  # SimpleCookie object.
             req.send_header('Set-Cookie', morsel.output(header='').lstrip())
 
+        # Extra headers like those for no-caching.
+        for header in req.m_headers:
+            req.send_header(header[0], header[1])
+
         req.end_headers()
 
         req.wfile.write(out)
-
-    def display_directory(syspath, urlpath):
-        '''
-        Display the directory listing with active links.
-        '''
-        # The directory exists but there is no index.html file in it.
-        # Display a directory listing.
-        lines = []
-        lines.append('<!DOCTYPE HTML>')
-        lines.append('<html>')
-        lines.append('  <head>')
-        lines.append('    <meta charset="utf-8">')
-        lines.append('    <title>Webserver - Directory</title>')
-        lines.append('  </head>')
-        lines.append('  <body>')
-        lines.append('    <pre>')
-        lines.append(syspath + '\n')
-
-        if urlpath != '/':
-            # If this is not the top level URL path, allow
-            # the user to backup using '..'.
-            if urlpath[-1] == '/':
-                urlppath = os.path.dirname(urlpath)
-            urlppath = os.path.dirname(urlpath)
-            fname = '..'
-            fsize = 0
-            ftype = 'dir'
-            lines.append('{0:>10}  {1:<4}  <a href="{2}">{3}</a>'.format(fsize, ftype, urlppath, fname))
-
-        for fname in sorted(os.listdir(syspath), key=str.lower):
-            sysfile = os.path.join(syspath, fname)
-            fsize = os.path.getsize(sysfile)
-            ftype = 'dir' if os.path.isdir(sysfile) is True else 'file'
-            if urlpath[-1] == '/':
-                link = urlpath + fname
-            else:
-                link = urlpath + '/' + fname
-            lines.append('{0:>10}  {1:<4}  <a href="{2}">{3}</a>'.format(fsize, ftype, link, fname))
-
-        lines.append('    </pre>')
-        lines.append('  </body>')
-        lines.append('</html>')
-
-        out = '\n'.join(lines)
-        send(req, 'text/html', out)
 
     def escape_text(text):
         '''
@@ -288,88 +310,19 @@ def request_handler(req):
         proc.wait()
         return proc.returncode, text
 
-    def special_case(res, opts, logger):
+    def redirect(req, opts, logger, url):
         '''
-        Handle special case URLs.
+        Redirect to the login page.
         '''
-        # Check for special URLs.
-        if re.search(r'^/webserver/info/?$', req.m_urlpath):
-            # This is a special dummy path that tells the handler to
-            # report information about the server.
-            logger.debug('SPECIAL CASE: /webserver/info.')
-            webserver_info(req, opts, logger)
-            return True
-        elif re.search(r'^/system/name/?$', req.m_urlpath):
-            # This is a special dummy path that tells the handler to
-            # report the system name.
-            logger.debug('SPECIAL CASE: /system/name.')
-            sts, out = runcmd('uname -a')
-            send(req, 'text/plain', out)
-            return True
-        elif re.search(r'^/redirect/to/.*$', req.m_urlpath):
-            # This is a special dummy path that tells the handler to
-            # redirect to the specified URL.
-            # If the first part is http/ or https/ it will
-            # be converted to https:// otherwise it is treated as
-            # an abs path from the root of the web directory.
-            # Examples:
-            #    /redirect/to/https/google.com --> https://google.com
-            #    /redirect/to/webserver.html   --> /webserver.html
-            url = req.m_urlpath[len('/redirect/to'):]
-            url = re.sub(r'^/(http)(s)?/', r'\1\2://', url)
-            logger.debug('REDIRECT: "{0}.'.format(url))
-            req.send_response(301)
-            req.send_header('Location', url)
+        logger.debug('REDIRECT: "{0}".'.format(url))
+        req.send_response(301)
+        req.send_header('Location', url)
 
-            # Cookies - this always resets all of the cookies.
-            for morsel in req.m_cookie.values():  # SimpleCookie object.
-                req.send_header('Set-Cookie', morsel.output(header='').lstrip())
+        # Cookies - this always resets all of the cookies.
+        for morsel in req.m_cookie.values():  # SimpleCookie object.
+            req.send_header('Set-Cookie', morsel.output(header='').lstrip())
 
-            req.end_headers()
-            return True
-        elif re.search(r'@$', req.m_urlpath):
-            # If '@' appears at the end of a directory, generate a directory
-            # listing even if an index.html is present.
-            # If '@' appears at the end of the file, dump the file contents
-            # as plain text.
-            logger.debug('SPECIAL CASE: @ (directory listing or file contents).')
-            req.m_syspath = req.m_syspath[:-1]
-            req.m_urlpath = req.m_urlpath[:-1]
-            if os.path.exists(req.m_syspath) is False:
-                req.send_error(404, 'Not found')
-            elif os.path.isdir(req.m_syspath):
-                display_directory(req.m_syspath, req.m_urlpath)
-            elif os.path.isfile(req.m_syspath):
-                try:
-                    with open(req.m_syspath, 'r') as ifp:
-                        out = ifp.read()
-                    send(req, 'text/plain', out)
-                except IOError:
-                    req.send_error(404, 'Not found')
-            else:
-                req.send_error(404, 'Not found')
-            return True
-        elif re.search(r'!$', req.m_urlpath):
-            # If '!' appears at the end of the path, execute
-            # the file and display the output in the format
-            # specified by the content-type parameter.
-            # If the content-type parameter is not specified
-            # then display the output as plain text.
-            # Example:
-            if 'content-type' in req.m_params:
-                ctype = req.m_params['content-type'][0]
-            else:
-                ctype = 'text/plain'
-            logger.debug('SPECIAL CASE: ! ({0})'.format(ctype))
-            req.m_syspath = req.m_syspath[:-1]
-            req.m_urlpath = req.m_urlpath[:-1]
-            if os.path.isfile(req.m_syspath):
-                sts, out = runcmd(req.m_syspath)
-                send(req, ctype, out)
-            else:
-                req.send_error(404, 'Not found: "{0}"'.format(req.m_syspath))
-            return True
-        return False
+        req.end_headers()
 
     def define_template_parameters(req):
         '''
@@ -523,61 +476,241 @@ def request_handler(req):
             send(req, 'text/plain', out)
         return True
 
+    def display_directory(req):
+        '''
+        Display the directory listing with active links.
+        '''
+        # The directory exists but there is no index.html file in it.
+        # Display a directory listing.
+        lines = []
+        lines.append('<!DOCTYPE HTML>')
+        lines.append('<html>')
+        lines.append('  <head>')
+        lines.append('    <meta charset="utf-8">')
+        lines.append('    <title>Webserver - Directory</title>')
+        lines.append('  </head>')
+        lines.append('  <body>')
+        lines.append('    <pre>')
+        lines.append(req.m_syspath + '\n')
+
+        if req.m_urlpath != '/':
+            # If this is not the top level URL path, allow
+            # the user to backup using '..'.
+            if req.m_urlpath[-1] == '/':
+                # This avoids the problem of '//' which resets the path.
+                urlppath = os.path.dirname(req.m_urlpath)
+            urlppath = os.path.dirname(req.m_urlpath)
+            fname = '..'
+            fsize = 0
+            ftype = 'dir'
+            lines.append('{0:>10}  {1:<4}  <a href="{2}">{3}</a>'.format(fsize, ftype, urlppath, fname))
+
+        for fname in sorted(os.listdir(req.m_syspath), key=str.lower):
+            sysfile = os.path.join(req.m_syspath, fname)
+            fsize = os.path.getsize(sysfile)
+            ftype = 'dir' if os.path.isdir(sysfile) is True else 'file'
+            if req.m_urlpath[-1] == '/':
+                link = req.m_urlpath + fname
+            else:
+                link = req.m_urlpath + '/' + fname
+            lines.append('{0:>10}  {1:<4}  <a href="{2}">{3}</a>'.format(fsize, ftype, link, fname))
+
+        lines.append('    </pre>')
+        lines.append('  </body>')
+        lines.append('</html>')
+
+        out = '\n'.join(lines)
+        send(req, 'text/html', out)
+
+    def display_file(req, opts, logger, path):
+        '''
+        Display the file specified by the path
+        argument.
+
+        If it is HTML, allow embedded python code.
+        '''
+        # Load the file data.
+        ctype = req.guess_type(path)
+        if ctype in ['application/x-sh', ]:
+            ctype = 'text/plain'  # fix .sh
+        logger.debug('Content type is "{0}".'.format(ctype))
+
+        try:
+            mode = 'r' if ctype.startswith('text/') else 'rb'
+            with open(path, mode) as ifp:
+                out = ifp.read()
+
+            # Allow embedded python in HTML code.
+            if ctype == 'text/html':
+                out = compile_template(out)
+
+            # Create the page.
+            send(req, ctype, out)
+        except IOError as exc:
+            req.send_error(404, 'File not found {0}'.format(exc))
+
+    def url_webinfo(req, opts, logger):
+        '''
+        Special dispatched URL: /webserver/info.
+        '''
+        webserver_info(req, opts, logger)
+
+    def url_sysname(req, opts, logger):
+        '''
+        Special dispatched URL: /system/name.
+        '''
+        # run uname -a, capture the output and display it
+        sts, out = runcmd('uname -a')
+        send(req, 'text/plain', out)
+
+    def url_redirect1(req, opts, logger, path):
+        '''
+        Special dispatched URL: /redirect/to/...
+        '''
+        redirect(req, opts, logger, path)
+
+    def url_redirect2(req, opts, logger, prefix, path):
+        '''
+        Special dispatched URL: /redirect/to/...
+        '''
+        url = '{0}://{1}'.format(prefix, path)
+        redirect(req, opts, logger, url)
+
+    def url_dir(req, opts, logger, path):
+        '''
+        Special dispatched URL: .*@.
+
+        If '@' appears at the end of a directory, generate a directory
+        listing even if an index.html is present.
+
+        If '@' appears at the end of the file, dump the file contents
+         as plain text.
+        '''
+        req.m_syspath = req.m_syspath[:-1]
+        req.m_urlpath = req.m_urlpath[:-1]
+
+        if os.path.exists(req.m_syspath) is False:
+            req.send_error(404, 'Not found')
+        elif os.path.isdir(req.m_syspath):
+            display_directory(req)
+        elif os.path.isfile(req.m_syspath):
+            try:
+                with open(req.m_syspath, 'r') as ifp:
+                    out = ifp.read()
+                send(req, 'text/plain', out)
+            except IOError:
+                req.send_error(404, 'Not found')
+        else:
+            req.send_error(404, 'Not found')
+
+    def url_exec(req, opts, logger, path):
+        '''
+        Special dispatched URL: .*!.
+        '''
+        # If '!' appears at the end of the path, execute
+        # the file and display the output in the format
+        # specified by the content-type parameter on the
+        # URL.
+        #
+        # If the content-type parameter is not specified
+        # then display the output as plain text.
+        #
+        # Here is an example:
+        #   localhost:8080/scripts/make_page.sh?content-type=text/html
+        if 'content-type' in req.m_params:
+            ctype = req.m_params['content-type'][0]
+        else:
+            ctype = 'text/plain'
+
+        req.m_syspath = req.m_syspath[:-1]
+        req.m_urlpath = req.m_urlpath[:-1]
+
+        if os.path.isfile(req.m_syspath):
+            sts, out = runcmd(req.m_syspath)
+            send(req, ctype, out)
+        else:
+            req.send_error(404, 'Not found: "{0}"'.format(req.m_syspath))
+
+    def url_general_dispatch(req, opts, logger):
+        '''
+        General dispatcher.
+        '''
+        # If control reaches this point, this is not a special
+        # case, the user specified a directory or file to
+        # handle.
+        if os.path.exists(req.m_syspath) is False:
+            req.send_error(404, 'Not found {0}'.format(req.m_syspath))  # path must exist
+            return
+
+        if os.path.isdir(req.m_syspath) is True:
+            # This is a directory.
+            # See if index files are there.
+            sysfile = None
+            for index in ['index.html', 'index.htm', 'default.htm', ]:
+                path = os.path.join(req.m_syspath, index)
+                if os.path.exists(path) is True:
+                    sysfile = path
+                    break
+
+            # Special case, if this is a directory with no
+            # index files, display the directory contents.
+            if sysfile is None:
+                display_directory(req)
+                return
+
+            req.m_syspath = sysfile
+
+        # Process templates or non-templates.
+        if template(req, logger) is False:
+            display_file(req, opts, logger, req.m_syspath)
+
+    def url_dispatcher(req, opts, logger):
+        '''
+        Dispatch the special urls to functions.
+        '''
+        global ws_globals
+        logger.debug('REQUEST PATH {0}'.format(req.path))
+
+        if 'url_dispatch' not in ws_globals:
+            # Add in the url dispatches for the 'special' URLs.
+            # This is done here to avoid re-compiling them every
+            # time a request is handled.
+            # The first argument is the URL pattern to match.
+            # The second argument is the name of the dispatch function.
+            # The dispatch function has 3 fixed arguments plus the arguments
+            # defined in the re.
+            # Example:
+            #    (re.compile('/foo/([^/]+)/([^/]+)/?'), 'url_func'), # <-- dispatch: 2 args: arg1, arg2
+            #
+            #    def url_func(req, opts, logger, arg1, arg2): ...
+            ws_globals['url_dispatch'] = (
+                (re.compile(r'^/webserver/info/?$'), url_webinfo),
+                (re.compile(r'^/system/name/?$'), url_sysname),
+                (re.compile('^/redirect/to/(https?)/(.+)$'), url_redirect2),
+                (re.compile('^/redirect/to(/.+)$'), url_redirect1),
+                (re.compile('^(.+)@$'), url_dir),
+                (re.compile('^(.+)!$'), url_exec),
+            )
+
+        for dispatch in ws_globals['url_dispatch']:
+            regex = dispatch[0]
+            function = dispatch[1]  # function name
+            match = regex.search(req.m_urlpath)
+            logger.debug('URL_DISPATCH DEBUG "{0}" "{1}" "{2}"'.format(req.m_urlpath, regex.pattern, function.__name__))
+            if match:
+                args = match.groups()
+                kwargs = match.groupdict()
+                logger.debug('URL DISPATCH "{0}" "{1}".'.format(function.__name__, req.m_urlpath))
+                function(req, opts, logger, *args, **kwargs)
+                return
+
+        url_general_dispatch(req, opts, logger)
+
     # Main.
     logger = req.ws_get_logger()
     opts = req.ws_get_opts()
     init(req, opts, logger)
-    if special_case(req, opts, logger):
-        return
-
-    # If control reaches this point, this is not a special
-    # case, the user specified a directory or file to
-    # handle.
-    if os.path.exists(req.m_syspath) is False:
-        req.send_error(404, 'Not found')  # path must exist
-        return
-
-    if os.path.isdir(req.m_syspath) is True:
-        # This is a directory.
-        # See if index files are there.
-        sysfile = None
-        for index in ['index.html', 'index.html']:
-            path = os.path.join(req.m_syspath, index)
-            if os.path.exists(path) is True:
-                sysfile = path
-                break
-
-        # Special case, if this is a directory with no
-        # index files, display the directory contents.
-        if sysfile is None:
-            display_directory(req.m_syspath, req.m_urlpath)
-            return
-
-        req.m_syspath = sysfile
-
-    # Process templates.
-    if template(req, logger) is True:
-        return
-
-    # Get the content type.
-    ctype = req.guess_type(req.m_syspath)
-    if ctype in ['application/x-sh', ]:
-        ctype = 'text/plain'  # fix .sh
-    logger.debug('Content type is "{0}".'.format(ctype))
-
-    # Load the file data.
-    try:
-        mode = 'r' if ctype.startswith('text/') else 'rb'
-        with open(req.m_syspath, mode) as ifp:
-            out = ifp.read()
-
-        # Allow embedded python in HTML code.
-        if ctype == 'text/html':
-            out = compile_template(out)
-
-        # Create the page.
-        send(req, ctype, out)
-    except IOError:
-        req.send_error(404, 'File not found')
+    # nocache(req)  # test
+    url_dispatcher(req, opts, logger)
 
 
