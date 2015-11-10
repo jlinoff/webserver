@@ -1,10 +1,11 @@
 # webserver
-Simple python webserver than demonstrates GET/POST handling for HTTP/HTTPS
+Simple python webserver than allows embedded Python in the HTML
 
 ## Introduction
 
-Simple web server that demonstrates how browser/server interactions
-work for HEAD, GET and POST requests using HTTP or HTTPS. It can be
+Simple web server that demonstrates how to build a system thata embeds
+Python in HTML as well as shows how browser/server interactions work
+for HEAD, GET and POST requests using HTTP or HTTPS. It can be
 customized using plugins.
 
 This is an all-in-one solution. You do not need to separate out your
